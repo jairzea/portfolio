@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #05070d;
+  color: #e8ecf5;
+}
+
+/* Aurora de fondo: dos manchas de color en movimiento lento. */
+@keyframes drift {
+  from {
+    transform: translate3d(-8%, -4%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(8%, 6%, 0) scale(1.25);
+  }
+}
+
+.aurora {
+  animation: drift 18s ease-in-out infinite alternate;
+}
+
+/* Respeta a quien pidió menos movimiento: apaga toda animación. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
