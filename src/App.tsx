@@ -1,6 +1,7 @@
 import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react'
+import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { experience, me, projects, skills, stats } from './data'
+import { experience, focus, me, projects, skills, stats } from './data'
 
 /**
  * Aparece al entrar en viewport. `once` evita re-animar al volver a subir.
@@ -51,9 +52,16 @@ function Chip({ children }: { children: ReactNode }) {
   )
 }
 
+const FILTERS = ['Todos', 'Plataformas', 'IA', 'Herramientas', 'Móvil'] as const
+
 export default function App() {
   const { scrollYProgress } = useScroll()
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 })
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]>('Todos')
+  const shown = useMemo(
+    () => (filter === 'Todos' ? projects : projects.filter((p) => p.tag === filter)),
+    [filter],
+  )
 
   return (
     <>
@@ -74,6 +82,9 @@ export default function App() {
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <span className="font-semibold tracking-tight">JZ</span>
           <div className="flex gap-6 text-sm text-slate-400">
+            <a href="#enfoque" className="hidden transition-colors hover:text-white sm:inline">
+              Cómo trabajo
+            </a>
             <a href="#proyectos" className="transition-colors hover:text-white">
               Proyectos
             </a>
@@ -160,9 +171,46 @@ export default function App() {
           </dl>
         </section>
 
+        <Section id="enfoque" title="Cómo trabajo">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {focus.map((f, i) => (
+              <Reveal key={f.title} delay={(i % 3) * 0.08}>
+                <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                  <h3 className="mb-3 text-lg font-semibold tracking-tight">{f.title}</h3>
+                  <p className="leading-relaxed text-slate-300">{f.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </Section>
+
         <Section id="proyectos" title="Proyectos">
+          <Reveal>
+            <div
+              role="group"
+              aria-label="Filtrar proyectos por categoría"
+              className="mb-10 flex flex-wrap gap-2"
+            >
+              {FILTERS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFilter(f)}
+                  aria-pressed={filter === f}
+                  className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                    filter === f
+                      ? 'border-cyan-400/40 bg-cyan-400/15 text-cyan-200'
+                      : 'border-white/10 text-slate-300 hover:bg-white/5'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </Reveal>
+
           <div className="grid gap-6 md:grid-cols-2">
-            {projects.map((p, i) => (
+            {shown.map((p, i) => (
               <Reveal key={p.name} delay={(i % 2) * 0.1}>
                 <motion.article
                   whileHover={{ y: -6 }}
@@ -178,9 +226,14 @@ export default function App() {
                     className={`absolute -top-24 -right-24 h-48 w-48 rounded-full bg-gradient-to-br ${p.accent} opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-20`}
                   />
 
-                  <h3 className="text-2xl font-semibold tracking-tight">{p.name}</h3>
+                  <div className="flex items-start justify-between gap-4">
+                    <h3 className="text-2xl font-semibold tracking-tight">{p.name}</h3>
+                    <span className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs text-slate-300">
+                      {p.tag}
+                    </span>
+                  </div>
                   <p className="mt-1 text-sm text-cyan-400">{p.role}</p>
-                  <p className="mt-4 leading-relaxed text-slate-400">{p.blurb}</p>
+                  <p className="mt-4 leading-relaxed text-slate-300">{p.blurb}</p>
 
                   <ul className="mt-6 flex flex-wrap gap-2">
                     {p.stack.map((t) => (
@@ -190,18 +243,34 @@ export default function App() {
                     ))}
                   </ul>
 
-                  {p.url && (
-                    <a
-                      href={p.url}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-white hover:text-cyan-400"
-                    >
-                      Visitar
-                      <span aria-hidden="true">→</span>
-                      <span className="sr-only">{p.name}, se abre en una pestaña nueva</span>
-                    </a>
-                  )}
+                  <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2">
+                    {p.url && (
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-white hover:text-cyan-400"
+                      >
+                        Visitar
+                        <span aria-hidden="true">→</span>
+                        <span className="sr-only">{p.name}, se abre en una pestaña nueva</span>
+                      </a>
+                    )}
+                    {p.repo && (
+                      <a
+                        href={p.repo}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-cyan-400"
+                      >
+                        Código
+                        <span aria-hidden="true">↗</span>
+                        <span className="sr-only">
+                          Repositorio de {p.name}, se abre en una pestaña nueva
+                        </span>
+                      </a>
+                    )}
+                  </div>
                 </motion.article>
               </Reveal>
             ))}
