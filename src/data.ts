@@ -280,10 +280,34 @@ export const experience = [
   },
 ]
 
+/**
+ * Insignias servidas desde Credly (el emisor), no copiadas al repo: los logos
+ * de AWS son marca registrada y así la imagen queda siempre atada a la
+ * credencial vigente. `badge` vacío cae al monograma de respaldo.
+ */
 export const certifications = [
-  { name: 'AWS Partner: Technical Accredited', issuer: 'Amazon Web Services', year: '2025' },
-  { name: 'AWS Partner: Sales Accreditation', issuer: 'Amazon Web Services', year: '2025' },
-  { name: 'PHP and Laravel', issuer: 'TestDome', year: '2022' },
+  {
+    name: 'AWS Partner: Technical Accredited',
+    issuer: 'Amazon Web Services',
+    year: 'Ago 2025',
+    badge: 'https://images.credly.com/size/340x340/images/8f006312-3154-45bf-a845-4a043641e83c/blob',
+    url: 'https://www.credly.com/badges/300f8af7-3ef6-4c5d-b3b8-23a46f718e72/public_url',
+  },
+  {
+    name: 'AWS Partner: Sales Accredited',
+    issuer: 'Amazon Web Services',
+    year: 'Ago 2025',
+    badge: 'https://images.credly.com/size/340x340/images/46ea4542-72a8-46a1-8d68-b72c4ca50820/blob',
+    url: 'https://www.credly.com/badges/b7be980c-0925-49d9-a37b-4e8be2f0ee24/public_url',
+  },
+  {
+    name: 'PHP and Laravel',
+    issuer: 'TestDome',
+    year: 'Sep 2022',
+    badge: 'https://www.testdome.com/webapp/dist/apple-touch-icon.png',
+    url: 'https://www.testdome.com/certificates/653f5788635041a0aa676de9a3082571',
+    framed: true,
+  },
 ]
 
 export const skills = [

@@ -91,6 +91,12 @@ export default function App() {
             <a href="#experiencia" className="transition-colors hover:text-white">
               Experiencia
             </a>
+            <a
+              href="#certificaciones"
+              className="hidden transition-colors hover:text-white lg:inline"
+            >
+              Certificaciones
+            </a>
             <a href="#contacto" className="transition-colors hover:text-white">
               Contacto
             </a>
@@ -336,11 +342,45 @@ export default function App() {
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {certifications.map((c, i) => (
               <Reveal key={c.name} delay={(i % 3) * 0.08} as="li">
-                <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                  <h3 className="font-medium">{c.name}</h3>
-                  <p className="mt-2 text-sm text-slate-300">{c.issuer}</p>
-                  <p className="mt-1 text-sm text-slate-400">{c.year}</p>
-                </div>
+                <a
+                  href={c.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="group flex h-full flex-col items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors hover:border-white/25 hover:bg-white/[0.06]"
+                >
+                  {c.badge ? (
+                    <img
+                      src={c.badge}
+                      alt=""
+                      width={112}
+                      height={112}
+                      loading="lazy"
+                      className={`h-28 w-28 object-contain transition-transform duration-300 group-hover:scale-105 ${
+                        // Los logos cuadrados y pequeños necesitan marco; las
+                        // insignias de AWS ya traen su propia forma recortada.
+                        c.framed ? 'rounded-full border border-white/10 bg-white/5 p-6' : ''
+                      }`}
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="flex h-28 w-28 items-center justify-center rounded-full border border-white/10 bg-white/5 text-2xl font-semibold text-slate-200"
+                    >
+                      {c.issuer.slice(0, 2)}
+                    </span>
+                  )}
+                  <span>
+                    <span className="block font-medium group-hover:text-cyan-300">{c.name}</span>
+                    <span className="mt-2 block text-sm text-slate-300">{c.issuer}</span>
+                    <span className="mt-1 block text-sm text-slate-400">{c.year}</span>
+                  </span>
+                  <span className="mt-auto pt-2 text-sm font-medium text-slate-400 group-hover:text-cyan-400">
+                    Verificar <span aria-hidden="true">↗</span>
+                    <span className="sr-only">
+                      credencial {c.name}, se abre en una pestaña nueva
+                    </span>
+                  </span>
+                </a>
               </Reveal>
             ))}
           </ul>
