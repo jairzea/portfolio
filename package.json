@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && touch dist/.nojekyll && git add -f dist && git commit -q -m \"chore: build\" && git subtree split --prefix dist -b gh-pages-tmp && git push -f origin gh-pages-tmp:gh-pages && git branch -D gh-pages-tmp && git reset -q --soft HEAD~1 && git restore --staged dist"
   },
   "dependencies": {
     "motion": "12.23.12",

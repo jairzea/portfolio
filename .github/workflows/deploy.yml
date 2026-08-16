@@ -1,8 +1,11 @@
 name: Deploy to GitHub Pages
 
+# Solo manual: la cuenta tiene Actions bloqueado por facturación, así que el
+# sitio se publica desde la rama gh-pages (ver README). Cuando Actions vuelva a
+# estar disponible, reactivar el disparo por push añadiendo:
+#   push:
+#     branches: [master]
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 # Permisos mínimos: leer el código y publicar en Pages.
