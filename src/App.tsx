@@ -1,7 +1,7 @@
 import { motion, useReducedMotion, useScroll, useSpring } from 'motion/react'
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { experience, focus, me, projects, skills, stats } from './data'
+import { certifications, experience, focus, me, projects, skills, stats } from './data'
 
 /**
  * Aparece al entrar en viewport. `once` evita re-animar al volver a subir.
@@ -330,6 +330,20 @@ export default function App() {
               </Reveal>
             ))}
           </div>
+        </Section>
+
+        <Section id="certificaciones" title="Certificaciones">
+          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {certifications.map((c, i) => (
+              <Reveal key={c.name} delay={(i % 3) * 0.08} as="li">
+                <div className="h-full rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+                  <h3 className="font-medium">{c.name}</h3>
+                  <p className="mt-2 text-sm text-slate-300">{c.issuer}</p>
+                  <p className="mt-1 text-sm text-slate-400">{c.year}</p>
+                </div>
+              </Reveal>
+            ))}
+          </ul>
         </Section>
 
         <Section id="contacto" title="Contacto">

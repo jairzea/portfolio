@@ -218,7 +218,7 @@ export const experience = [
     stack: ['Java', 'React', 'Angular', 'Cypress', 'Git'],
   },
   {
-    company: 'Casa de software (Bogotá · mercado EE. UU.)',
+    company: 'Unlimitech.cloud',
     role: 'Desarrollo AI-First',
     period: 'Actual',
     place: 'Remoto',
@@ -255,7 +255,7 @@ export const experience = [
     stack: ['React', 'Node', 'Laravel', 'C#', 'Flutter', 'Jenkins'],
   },
   {
-    company: 'ST&T · Unlimitech Cloud',
+    company: 'ST&T · Unlimitech.cloud',
     role: 'Desarrollador Web',
     period: '2 años',
     place: 'Bogotá',
@@ -278,6 +278,12 @@ export const experience = [
     ],
     stack: ['Flutter', 'Laravel', 'CodeIgniter', 'PostgreSQL'],
   },
+]
+
+export const certifications = [
+  { name: 'AWS Partner: Technical Accredited', issuer: 'Amazon Web Services', year: '2025' },
+  { name: 'AWS Partner: Sales Accreditation', issuer: 'Amazon Web Services', year: '2025' },
+  { name: 'PHP and Laravel', issuer: 'TestDome', year: '2022' },
 ]
 
 export const skills = [
