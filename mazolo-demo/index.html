@@ -77,6 +77,9 @@ select.f{padding:9px 10px;border-radius:8px;border:1px solid var(--line);backgro
 .lane.vendido .cards{opacity:.92}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 12px;box-shadow:var(--shadow);cursor:grab;display:flex;flex-direction:column;gap:6px;user-select:none;-webkit-user-select:none}
 .card:hover{border-color:var(--muted)}
+.cont{display:block;width:100%;height:auto;overflow:visible}
+.lane.vendido .cont{filter:grayscale(.85);opacity:.65}
+.cont.big{max-width:400px}
 .card.sortable-ghost{opacity:.35}
 .card.sortable-chosen{box-shadow:0 8px 24px rgba(23,40,69,.25)}
 .lane.vendido .card{cursor:pointer}
@@ -198,7 +201,7 @@ tbody tr:hover{background:var(--surface-2)}
   <div class="toolbar">
     <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" type="search" placeholder="Buscar por código o cliente (ej. 2381)" aria-label="Buscar"></div>
     <select class="f" id="fTipo" aria-label="Tipo"><option value="">Todos los tipos</option><option>Bodega</option><option>Oficina</option><option>Garita</option></select>
-    <select class="f" id="fTam" aria-label="Tamaño"><option value="">Todos los tamaños</option><option value="10">10 pies</option><option value="20">20 pies</option><option value="40">40 pies</option><option value="40 HC">40 HC</option></select>
+    <select class="f" id="fTam" aria-label="Tamaño"><option value="">Todos los tamaños</option><option value="10">10 pies</option><option value="20">20 pies</option><option value="40">40 pies</option><option value="40 HC">40 HC</option><option value="45">45 pies</option></select>
     <select class="f" id="fCond" aria-label="Condición"><option value="">Nuevo y usado</option><option>Nuevo</option><option>Usado</option></select>
     <div class="seg" role="group" aria-label="Vista"><button type="button" id="vBoard" aria-pressed="true">Tablero</button><button type="button" id="vTable" aria-pressed="false">Tabla</button></div>
   </div>
@@ -253,7 +256,7 @@ const days=d=>Math.round((new Date(d)-today)/864e5);
 const money=n=>'$'+Math.round(n).toLocaleString('es-CO');
 
 // precios desde (los que Mazolo ha publicado)
-function precioVenta(c){if(c.tam==='40 HC'||c.tam==='40')return c.cond==='Nuevo'?18000000:9000000;if(c.tipo==='Oficina')return 14000000;return 6000000;}
+function precioVenta(c){if(c.tam==='40 HC'||c.tam==='40'||c.tam==='45')return c.cond==='Nuevo'?18000000:9000000;if(c.tipo==='Oficina')return 14000000;return 6000000;}
 function canon(c){return c.tipo==='Oficina'?1000000:600000;}
 
 // datos de ejemplo
@@ -278,6 +281,8 @@ let data=[
   mk('MSKU712045',{tam:'40 HC',estado:'apartado',ingreso:addD(today,-33),cliente:'Agroindustrias Turbaco (ejemplo)',hasta:addD(today,9)}),
   mk('SEGU410287',{tipo:'Oficina',tam:'20',ingreso:addD(today,-50),nota:'Con aire y baño'}),
   mk('SEGU410293',{tipo:'Oficina',tam:'20',estado:'arrendado',ingreso:addD(today,-200),cliente:'Constructora Bahía (ejemplo)',inicio:addD(today,-150),vence:addD(today,30),valor:1000000}),
+  mk('CAIU450021',{tam:'45',ingreso:addD(today,-15)}),
+  mk('SEGU410306',{tipo:'Oficina',tam:'40',cond:'Nuevo',ingreso:addD(today,-8),nota:'Dos ambientes'}),
   mk('MZLU100027',{tipo:'Garita',tam:'10',cond:'Nuevo',ingreso:addD(today,-12)}),
   mk('MSKU718832',{tam:'40',estado:'arrendado',ingreso:addD(today,-160),cliente:'Logística Mamonal (ejemplo)',inicio:addD(today,-60),vence:addD(today,121),valor:900000}),
   mk('CAIU2610457',{estado:'vendido',ingreso:addD(today,-75),cliente:'Cliente de Cali (ejemplo)',fecha:addD(today,-18),valor:6200000}),
@@ -319,6 +324,56 @@ function renderStats(){
   $('#stats').innerHTML=items.map(([k,l,n,s,w])=>`<div class="stat" style="--c:${SMAP[k].c}"><span class="l">${l}</span><span class="n">${n}</span><span class="s${w?' warn':''}">${s}</span></div>`).join('');
 }
 
+// ---------- dibujo del contenedor (vista lateral, a escala)
+const LEN={'10':76,'20':130,'40':228,'40 HC':228,'45':246};
+const SIZECODE={'10':'12G1','20':'22G1','40':'42G1','40 HC':'45G1','45':'L5G1'};
+const PAINT=['#7E868F','#9C4038','#3E6795','#4E7553','#A8936B','#34475F','#B5652E'];
+function shade(hex,f){const n=parseInt(hex.slice(1),16);const r=Math.round(((n>>16)&255)*f),g=Math.round(((n>>8)&255)*f),b=Math.round((n&255)*f);return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);}
+function paintOf(c){
+  if(c.tipo!=='Bodega')return {body:'#E2E5E9',ink:'#2B3A52'};
+  let h=0;for(const ch of c.code)h=(h*31+ch.charCodeAt(0))%9973;
+  return {body:PAINT[h%PAINT.length],ink:'#FFFFFF'};
+}
+function containerSVG(c,big){
+  const W=250,G=60,p=paintOf(c),dark=shade(p.body,.72),rib=shade(p.body,.84);
+  let len=LEN[c.tam]||130,h=(c.tam==='40 HC'||c.tam==='45')?50:44;
+  if(c.tipo==='Garita'){len=64;h=50;}
+  const x=2,y=G-h,o=[];
+  o.push(`<line x1="0" y1="${G+.5}" x2="${W}" y2="${G+.5}" stroke="var(--line)" stroke-width="1"/>`);
+  if(c.tipo==='Garita'){
+    o.push(`<rect x="${x}" y="${y+4}" width="${len}" height="${h-4}" rx="1.5" fill="${p.body}" stroke="${dark}"/>`);
+    o.push(`<rect x="${x-3}" y="${y}" width="${len+6}" height="5" rx="1" fill="${dark}"/>`);
+    o.push(`<rect x="${x+6}" y="${y+11}" width="${len-30}" height="20" rx="1" fill="#BFD4E8" stroke="${dark}"/>`);
+    o.push(`<rect x="${x+len-20}" y="${y+11}" width="14" height="${h-15}" rx="1" fill="${shade(p.body,.9)}" stroke="${dark}"/>`);
+    o.push(`<circle cx="${x+len-9}" cy="${y+h/2+8}" r="1.2" fill="${dark}"/>`);
+  } else {
+    o.push(`<rect x="${x}" y="${y}" width="${len}" height="${h}" rx="1.5" fill="${p.body}" stroke="${dark}"/>`);
+    for(let i=x+8;i<x+len-6;i+=5)o.push(`<line x1="${i}" y1="${y+4}" x2="${i}" y2="${y+h-4}" stroke="${rib}" stroke-width="1.4"/>`);
+    o.push(`<rect x="${x}" y="${y}" width="${len}" height="3.5" fill="${dark}"/><rect x="${x}" y="${y+h-3.5}" width="${len}" height="3.5" fill="${dark}"/>`);
+    o.push(`<rect x="${x}" y="${y}" width="4" height="${h}" fill="${dark}"/><rect x="${x+len-4}" y="${y}" width="4" height="${h}" fill="${dark}"/>`);
+    [[x,y],[x+len-6,y],[x,y+h-5],[x+len-6,y+h-5]].forEach(([a,b])=>o.push(`<rect x="${a}" y="${b}" width="6" height="5" fill="${shade(p.body,.55)}"/>`));
+    if(c.tipo==='Oficina'){
+      const door=x+Math.round(len*.28);
+      o.push(`<rect x="${door}" y="${y+9}" width="15" height="${h-12}" fill="${shade(p.body,.9)}" stroke="${dark}"/><circle cx="${door+12}" cy="${y+h/2+4}" r="1.2" fill="${dark}"/>`);
+      const wins=len>150?[.55,.78]:[.62];
+      wins.forEach(f=>{const wx=x+Math.round(len*f);o.push(`<rect x="${wx}" y="${y+11}" width="24" height="15" fill="#BFD4E8" stroke="${dark}"/><line x1="${wx+12}" y1="${y+11}" x2="${wx+12}" y2="${y+26}" stroke="${dark}"/>`);});
+    } else {
+      const own=c.code.slice(0,4),ser=c.code.slice(4,10),cd=c.code[10],tx=x+len-9;
+      if(len<100){
+        o.push(`<text x="${tx}" y="${y+14}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="8.5" fill="${p.ink}">${own}</text>`);
+        o.push(`<text x="${tx}" y="${y+24}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="8.5" fill="${p.ink}">${ser} ${cd}</text>`);
+        o.push(`<text x="${tx}" y="${y+34}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="7" fill="${p.ink}" opacity=".85">${SIZECODE[c.tam]||''}</text>`);
+      } else {
+        o.push(`<text x="${tx}" y="${y+15}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="9" fill="${p.ink}" letter-spacing=".5">${own} ${ser} ${cd}</text>`);
+        o.push(`<text x="${tx}" y="${y+26}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="7.5" fill="${p.ink}" opacity=".85">${SIZECODE[c.tam]||''}</text>`);
+      }
+    }
+  }
+  if(c.solo)o.push(`<rect x="${x+8}" y="${y+h-17}" width="${Math.min(66,len-16)}" height="10" rx="2" fill="#FFFFFF" opacity=".9"/><text x="${x+11}" y="${y+h-9.5}" font-family="Source Sans 3,sans-serif" font-weight="700" font-size="7.5" fill="#AD2B2B">SOLO ARRIENDO</text>`);
+  const label=`${c.tipo} de ${tamTxt(c.tam)}, ${c.cond.toLowerCase()}`;
+  return `<svg class="cont${big?' big':''}" viewBox="0 0 ${W} ${G+2}" role="img" aria-label="${label}" preserveAspectRatio="xMinYMax meet">${o.join('')}</svg>`;
+}
+
 function cardHTML(c){
   let who='';
   if(c.estado==='apartado'){const d=days(c.hasta);who=`<div class="who"><b>${esc(c.cliente)}</b><span class="due ${d<=3?'warn':'calm'}">${d<0?'Venció':d===0?'Vence hoy':'Hasta el '+fmt(c.hasta)}</span></div>`;}
@@ -326,6 +381,7 @@ function cardHTML(c){
   else if(c.estado==='vendido'){who=`<div class="who"><b>${esc(c.cliente)}</b><span class="due calm">${fmt(c.fecha)}</span></div>`;}
   else {const d=-days(c.ingreso);who=`<div class="who"><span>${d} días en patio</span></div>`;}
   return `<div class="card" tabindex="0" data-id="${c.id}" role="button" aria-label="Contenedor ${c.code}">
+    ${containerSVG(c)}
     <div class="code">${codeHTML(c.code)}</div>
     <div class="meta"><span class="tag">${c.tipo} ${tamTxt(c.tam)}</span><span class="tag ${c.cond==='Nuevo'?'nuevo':''}">${c.cond}</span>${c.solo?'<span class="tag solo">Solo arriendo</span>':''}${c.nota?`<span class="tag nota">${esc(c.nota)}</span>`:''}</div>
     ${who}</div>`;
@@ -450,6 +506,7 @@ function openDrawer(id){
   const moves=ALLOWED[c.estado].filter(k=>!(k==='vendido'&&c.solo));
   $('#drawer').innerHTML=`<div class="dlg-h"><div><span class="pill" style="--c:${SMAP[c.estado].c}"><i></i>${SMAP[c.estado].name}</span><div class="big-code" style="margin-top:6px">${codeHTML(c.code)}</div></div><button class="x" type="button" id="dClose" aria-label="Cerrar ficha">${ICON_X}</button></div>
   <div class="drawer-b">
+    ${containerSVG(c,true)}
     <dl class="kv">${kv.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
     ${moves.length?`<div style="display:flex;flex-direction:column;gap:8px"><p class="sec-t">Mover a</p><div class="moves">${moves.map(k=>`<button class="btn" type="button" data-move="${k}"><span class="pill" style="--c:${SMAP[k].c}"><i></i>${SMAP[k].name}</span></button>`).join('')}</div></div>`:'<p class="help">La venta es el estado final. Queda en el historial.</p>'}
     <div style="display:flex;flex-direction:column;gap:10px"><p class="sec-t">Historial</p><ul class="hist">${c.hist.slice().reverse().map(h=>`<li style="--c:${h.c}"><span class="rail"><i></i><span></span></span><div>${esc(h.texto)}<small>${fmt(h.fecha)}${days(h.fecha)===0?' · hoy':''} · Day</small></div></li>`).join('')}</ul></div>
@@ -470,7 +527,7 @@ function openNuevo(){
   openModal(head('Ingresar contenedor','Solo el código es obligatorio. Lo demás queda como el último que registraste.')+`<form id="nForm" novalidate><div class="dlg-b">
     <div class="field"><label for="nCode">Código del contenedor</label><input id="nCode" class="code-in" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="CAIU 265238 1" autofocus><span class="help" id="nHelp">Escríbelo como aparece en la puerta: 4 letras y 7 números.</span></div>
     <div class="field"><span class="lbl">Tipo</span>${segOpts('tipo',[['Bodega','Bodega'],['Oficina','Oficina'],['Garita','Garita']],last.tipo)}</div>
-    <div class="field"><span class="lbl">Tamaño</span>${segOpts('tam',[['10','10 pies'],['20','20 pies'],['40','40 pies'],['40 HC','40 HC']],last.tam)}</div>
+    <div class="field"><span class="lbl">Tamaño</span>${segOpts('tam',[['10','10 pies'],['20','20 pies'],['40','40 pies'],['40 HC','40 HC'],['45','45 pies']],last.tam)}</div>
     <div class="field"><span class="lbl">Condición</span>${segOpts('cond',[['Nuevo','Nuevo'],['Usado','Usado']],last.cond)}</div>
     <label class="check"><input type="checkbox" id="nSolo" ${last.solo?'checked':''}> Solo para arriendo (por ejemplo, sin nacionalizar)</label>
     <div class="field"><label for="nNota">Nota (opcional)</label><input id="nNota" placeholder="Ej. sin nacionalizar, puerta con golpe"></div>
@@ -501,11 +558,11 @@ function openNuevo(){
 }
 
 // ---------- ingreso por lote
-const TAMS=[['10','10 pies'],['20','20 pies'],['40','40 pies'],['40 HC','40 HC']];
+const TAMS=[['10','10 pies'],['20','20 pies'],['40','40 pies'],['40 HC','40 HC'],['45','45 pies']];
 const TIPOS=[['Bodega','Bodega'],['Oficina','Oficina'],['Garita','Garita']];
 function hints(txt){
   const t=txt.toUpperCase();let tam=null,cond=null;
-  if(/40\s*-?\s*H\.?\s*C/.test(t))tam='40 HC';else if(/(^|\D)40(\D|$)/.test(t))tam='40';else if(/(^|\D)20(\D|$)/.test(t))tam='20';else if(/(^|\D)10(\D|$)/.test(t))tam='10';
+  if(/(^|\D)45(\D|$)/.test(t))tam='45';else if(/40\s*-?\s*H\.?\s*C/.test(t))tam='40 HC';else if(/(^|\D)40(\D|$)/.test(t))tam='40';else if(/(^|\D)20(\D|$)/.test(t))tam='20';else if(/(^|\D)10(\D|$)/.test(t))tam='10';
   if(/NUEV/.test(t))cond='Nuevo';else if(/USAD/.test(t))cond='Usado';
   let tipo=null;if(/OFICINA/.test(t))tipo='Oficina';else if(/GARITA/.test(t))tipo='Garita';else if(/BODEGA/.test(t))tipo='Bodega';
   return {tam,cond,tipo};
