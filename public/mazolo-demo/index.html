@@ -66,7 +66,7 @@ select.f{padding:9px 10px;border-radius:8px;border:1px solid var(--line);backgro
 :root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#0F1624}
 
 .board-scroll{overflow-x:auto;padding-bottom:24px;scroll-snap-type:x mandatory}
-.board{display:grid;grid-template-columns:repeat(4,minmax(270px,1fr));gap:14px;align-items:start}
+.board{display:grid;grid-template-columns:repeat(4,minmax(285px,1fr));gap:14px;align-items:start}
 .lane{background:var(--surface-2);border-radius:12px;display:flex;flex-direction:column;min-height:200px;scroll-snap-align:start}
 .lane-h{display:flex;align-items:center;gap:8px;padding:12px 14px 10px;border-bottom:3px solid var(--c)}
 .lane-h .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
@@ -77,9 +77,9 @@ select.f{padding:9px 10px;border-radius:8px;border:1px solid var(--line);backgro
 .lane.vendido .cards{opacity:.92}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:10px 12px;box-shadow:var(--shadow);cursor:grab;display:flex;flex-direction:column;gap:6px;user-select:none;-webkit-user-select:none}
 .card:hover{border-color:var(--muted)}
-.cont{display:block;width:100%;height:auto;overflow:visible}
+.cont{display:block;width:100%;height:auto;overflow:visible;margin:2px 0 4px}
 .lane.vendido .cont{filter:grayscale(.85);opacity:.65}
-.cont.big{max-width:400px}
+.cont.big{max-width:460px}
 .card.sortable-ghost{opacity:.35}
 .card.sortable-chosen{box-shadow:0 8px 24px rgba(23,40,69,.25)}
 .lane.vendido .card{cursor:pointer}
@@ -324,54 +324,76 @@ function renderStats(){
   $('#stats').innerHTML=items.map(([k,l,n,s,w])=>`<div class="stat" style="--c:${SMAP[k].c}"><span class="l">${l}</span><span class="n">${n}</span><span class="s${w?' warn':''}">${s}</span></div>`).join('');
 }
 
-// ---------- dibujo del contenedor (vista lateral, a escala)
-const LEN={'10':76,'20':130,'40':228,'40 HC':228,'45':246};
+// ---------- dibujo del contenedor en 3D (proyección oblicua, a escala)
+const LEN={'10':72,'20':128,'40':222,'40 HC':222,'45':240};
 const SIZECODE={'10':'12G1','20':'22G1','40':'42G1','40 HC':'45G1','45':'L5G1'};
 const PAINT=['#7E868F','#9C4038','#3E6795','#4E7553','#A8936B','#34475F','#B5652E'];
-function shade(hex,f){const n=parseInt(hex.slice(1),16);const r=Math.round(((n>>16)&255)*f),g=Math.round(((n>>8)&255)*f),b=Math.round((n&255)*f);return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);}
+function shade(hex,f){const n=parseInt(hex.slice(1),16);const cl=v=>Math.max(0,Math.min(255,Math.round(v)));const r=cl(((n>>16)&255)*f),g=cl(((n>>8)&255)*f),b=cl((n&255)*f);return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);}
 function paintOf(c){
-  if(c.tipo!=='Bodega')return {body:'#E2E5E9',ink:'#2B3A52'};
+  if(c.tipo!=='Bodega')return {body:'#DDE1E6',ink:'#2B3A52'};
   let h=0;for(const ch of c.code)h=(h*31+ch.charCodeAt(0))%9973;
   return {body:PAINT[h%PAINT.length],ink:'#FFFFFF'};
 }
+const pts=a=>a.map(p=>p.join(',')).join(' ');
 function containerSVG(c,big){
-  const W=250,G=60,p=paintOf(c),dark=shade(p.body,.72),rib=shade(p.body,.84);
-  let len=LEN[c.tam]||130,h=(c.tam==='40 HC'||c.tam==='45')?50:44;
-  if(c.tipo==='Garita'){len=64;h=50;}
-  const x=2,y=G-h,o=[];
-  o.push(`<line x1="0" y1="${G+.5}" x2="${W}" y2="${G+.5}" stroke="var(--line)" stroke-width="1"/>`);
+  const W=270,G=76,DX=24,DY=-13,p=paintOf(c);
+  const side=p.body,top=shade(p.body,1.22),end=shade(p.body,.78),dark=shade(p.body,.62),rib=shade(p.body,.86);
+  let len=LEN[c.tipo==='Garita'?'10':c.tam]||128,h=(c.tam==='40 HC'||c.tam==='45')?52:46;
+  if(c.tipo==='Garita'){len=60;h=52;}
+  const x=3,y=G-h,o=[];
+  // sombra en el piso
+  o.push(`<polygon points="${pts([[x+4,G],[x+len,G],[x+len+DX,G+DY],[x+DX+4,G+DY]])}" fill="#000" opacity=".10"/>`);
   if(c.tipo==='Garita'){
-    o.push(`<rect x="${x}" y="${y+4}" width="${len}" height="${h-4}" rx="1.5" fill="${p.body}" stroke="${dark}"/>`);
-    o.push(`<rect x="${x-3}" y="${y}" width="${len+6}" height="5" rx="1" fill="${dark}"/>`);
-    o.push(`<rect x="${x+6}" y="${y+11}" width="${len-30}" height="20" rx="1" fill="#BFD4E8" stroke="${dark}"/>`);
-    o.push(`<rect x="${x+len-20}" y="${y+11}" width="14" height="${h-15}" rx="1" fill="${shade(p.body,.9)}" stroke="${dark}"/>`);
-    o.push(`<circle cx="${x+len-9}" cy="${y+h/2+8}" r="1.2" fill="${dark}"/>`);
+    o.push(`<rect x="${x}" y="${y+5}" width="${len}" height="${h-5}" fill="${side}" stroke="${dark}" stroke-width=".8"/>`);
+    o.push(`<polygon points="${pts([[x+len,y+5],[x+len+DX,y+5+DY],[x+len+DX,G+DY],[x+len,G]])}" fill="${end}" stroke="${dark}" stroke-width=".8"/>`);
+    o.push(`<polygon points="${pts([[x-4,y+5],[x+len+4,y+5],[x+len+4+DX,y+5+DY],[x-4+DX,y+5+DY]])}" fill="${top}" stroke="${dark}" stroke-width=".8"/>`);
+    o.push(`<rect x="${x-4}" y="${y+1}" width="${len+8}" height="4" fill="${dark}"/><polygon points="${pts([[x+len+4,y+1],[x+len+4+DX,y+1+DY],[x+len+4+DX,y+5+DY],[x+len+4,y+5]])}" fill="${shade(dark,.85)}"/>`);
+    o.push(`<rect x="${x+6}" y="${y+12}" width="${len-28}" height="20" fill="#BFD4E8" stroke="${dark}" stroke-width=".8"/>`);
+    o.push(`<rect x="${x+len-18}" y="${y+12}" width="13" height="${h-16}" fill="${shade(side,.92)}" stroke="${dark}" stroke-width=".8"/><circle cx="${x+len-8}" cy="${y+h/2+9}" r="1.2" fill="${dark}"/>`);
+    const e0=x+len+5,f=(t)=>DY*t;
+    o.push(`<polygon points="${pts([[e0,y+12+f(5/DX)],[e0+14,y+12+f(19/DX)],[e0+14,y+30+f(19/DX)],[e0,y+30+f(5/DX)]])}" fill="#A9C2DB" stroke="${dark}" stroke-width=".8"/>`);
   } else {
-    o.push(`<rect x="${x}" y="${y}" width="${len}" height="${h}" rx="1.5" fill="${p.body}" stroke="${dark}"/>`);
-    for(let i=x+8;i<x+len-6;i+=5)o.push(`<line x1="${i}" y1="${y+4}" x2="${i}" y2="${y+h-4}" stroke="${rib}" stroke-width="1.4"/>`);
-    o.push(`<rect x="${x}" y="${y}" width="${len}" height="3.5" fill="${dark}"/><rect x="${x}" y="${y+h-3.5}" width="${len}" height="3.5" fill="${dark}"/>`);
+    // cara lateral
+    o.push(`<rect x="${x}" y="${y}" width="${len}" height="${h}" fill="${side}"/>`);
+    for(let i=x+8;i<x+len-6;i+=5)o.push(`<line x1="${i}" y1="${y+4}" x2="${i}" y2="${y+h-4}" stroke="${rib}" stroke-width="1.5"/>`);
+    o.push(`<rect x="${x}" y="${y}" width="${len}" height="3.5" fill="${dark}"/><rect x="${x}" y="${y+h-4}" width="${len}" height="4" fill="${dark}"/>`);
     o.push(`<rect x="${x}" y="${y}" width="4" height="${h}" fill="${dark}"/><rect x="${x+len-4}" y="${y}" width="4" height="${h}" fill="${dark}"/>`);
-    [[x,y],[x+len-6,y],[x,y+h-5],[x+len-6,y+h-5]].forEach(([a,b])=>o.push(`<rect x="${a}" y="${b}" width="6" height="5" fill="${shade(p.body,.55)}"/>`));
+    // techo
+    o.push(`<polygon points="${pts([[x,y],[x+len,y],[x+len+DX,y+DY],[x+DX,y+DY]])}" fill="${top}" stroke="${dark}" stroke-width=".8"/>`);
+    for(let i=x+10;i<x+len-4;i+=10)o.push(`<line x1="${i}" y1="${y}" x2="${i+DX}" y2="${y+DY}" stroke="${shade(top,.92)}" stroke-width="1"/>`);
+    // cara de las puertas
+    o.push(`<polygon points="${pts([[x+len,y],[x+len+DX,y+DY],[x+len+DX,G+DY],[x+len,G]])}" fill="${end}" stroke="${dark}" stroke-width=".8"/>`);
+    const at=t=>[x+len+DX*t,DY*t];
     if(c.tipo==='Oficina'){
-      const door=x+Math.round(len*.28);
-      o.push(`<rect x="${door}" y="${y+9}" width="15" height="${h-12}" fill="${shade(p.body,.9)}" stroke="${dark}"/><circle cx="${door+12}" cy="${y+h/2+4}" r="1.2" fill="${dark}"/>`);
-      const wins=len>150?[.55,.78]:[.62];
-      wins.forEach(f=>{const wx=x+Math.round(len*f);o.push(`<rect x="${wx}" y="${y+11}" width="24" height="15" fill="#BFD4E8" stroke="${dark}"/><line x1="${wx+12}" y1="${y+11}" x2="${wx+12}" y2="${y+26}" stroke="${dark}"/>`);});
+      const [wx,wy]=at(.3),[wx2,wy2]=at(.75);
+      o.push(`<polygon points="${pts([[wx,y+14+wy],[wx2,y+14+wy2],[wx2,y+28+wy2],[wx,y+28+wy]])}" fill="#A9C2DB" stroke="${dark}" stroke-width=".8"/>`);
     } else {
-      const own=c.code.slice(0,4),ser=c.code.slice(4,10),cd=c.code[10],tx=x+len-9;
+      [.2,.4,.6,.8].forEach(t=>{const [bx,by]=at(t);o.push(`<line x1="${bx}" y1="${y+5+by}" x2="${bx}" y2="${G-5+by}" stroke="${dark}" stroke-width="1.3"/>`);});
+      const [mx,my]=at(.5);o.push(`<line x1="${mx}" y1="${y+3+my}" x2="${mx}" y2="${G-3+my}" stroke="${shade(dark,.8)}" stroke-width=".9"/>`);
+    }
+    // esquineros
+    [[x,y],[x+len-6,y],[x,y+h-5],[x+len-6,y+h-5]].forEach(([a,b])=>o.push(`<rect x="${a}" y="${b}" width="6" height="5" fill="${shade(p.body,.5)}"/>`));
+    o.push(`<rect x="${x+len+DX-5}" y="${y+DY}" width="5" height="5" fill="${shade(p.body,.5)}"/><rect x="${x+len+DX-5}" y="${G+DY-5}" width="5" height="5" fill="${shade(p.body,.5)}"/>`);
+    if(c.tipo==='Oficina'){
+      const door=x+Math.round(len*.24);
+      o.push(`<rect x="${door}" y="${y+9}" width="16" height="${h-13}" fill="${shade(side,.92)}" stroke="${dark}" stroke-width=".8"/><circle cx="${door+12.5}" cy="${y+h/2+4}" r="1.3" fill="${dark}"/>`);
+      (len>150?[.5,.74]:[.58]).forEach(f=>{const wx=x+Math.round(len*f);o.push(`<rect x="${wx}" y="${y+12}" width="26" height="16" fill="#BFD4E8" stroke="${dark}" stroke-width=".8"/><line x1="${wx+13}" y1="${y+12}" x2="${wx+13}" y2="${y+28}" stroke="${dark}" stroke-width=".8"/>`);});
+    } else {
+      const own=c.code.slice(0,4),ser=c.code.slice(4,10),cd=c.code[10],tx=x+len-9,mono='font-family="IBM Plex Mono,monospace"';
       if(len<100){
-        o.push(`<text x="${tx}" y="${y+14}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="8.5" fill="${p.ink}">${own}</text>`);
-        o.push(`<text x="${tx}" y="${y+24}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="8.5" fill="${p.ink}">${ser} ${cd}</text>`);
-        o.push(`<text x="${tx}" y="${y+34}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="7" fill="${p.ink}" opacity=".85">${SIZECODE[c.tam]||''}</text>`);
+        o.push(`<text x="${tx}" y="${y+15}" text-anchor="end" ${mono} font-weight="600" font-size="9" fill="${p.ink}">${own}</text>`);
+        o.push(`<text x="${tx}" y="${y+26}" text-anchor="end" ${mono} font-weight="600" font-size="9" fill="${p.ink}">${ser} ${cd}</text>`);
+        o.push(`<text x="${tx}" y="${y+36}" text-anchor="end" ${mono} font-size="7.5" fill="${p.ink}" opacity=".85">${SIZECODE[c.tam]||''}</text>`);
       } else {
-        o.push(`<text x="${tx}" y="${y+15}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-weight="600" font-size="9" fill="${p.ink}" letter-spacing=".5">${own} ${ser} ${cd}</text>`);
-        o.push(`<text x="${tx}" y="${y+26}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="7.5" fill="${p.ink}" opacity=".85">${SIZECODE[c.tam]||''}</text>`);
+        o.push(`<text x="${tx}" y="${y+16}" text-anchor="end" ${mono} font-weight="600" font-size="10" fill="${p.ink}" letter-spacing=".5">${own} ${ser} ${cd}</text>`);
+        o.push(`<text x="${tx}" y="${y+27}" text-anchor="end" ${mono} font-size="8" fill="${p.ink}" opacity=".85">${SIZECODE[c.tam]||''}</text>`);
       }
     }
+    o.push(`<rect x="${x}" y="${y}" width="${len}" height="${h}" fill="none" stroke="${dark}" stroke-width=".8"/>`);
   }
-  if(c.solo)o.push(`<rect x="${x+8}" y="${y+h-17}" width="${Math.min(66,len-16)}" height="10" rx="2" fill="#FFFFFF" opacity=".9"/><text x="${x+11}" y="${y+h-9.5}" font-family="Source Sans 3,sans-serif" font-weight="700" font-size="7.5" fill="#AD2B2B">SOLO ARRIENDO</text>`);
+  if(c.solo)o.push(`<rect x="${x+8}" y="${y+h-19}" width="${Math.min(70,len-16)}" height="11" rx="2" fill="#FFFFFF" opacity=".92"/><text x="${x+11}" y="${y+h-10.5}" font-family="Source Sans 3,sans-serif" font-weight="700" font-size="8" fill="#AD2B2B">SOLO ARRIENDO</text>`);
   const label=`${c.tipo} de ${tamTxt(c.tam)}, ${c.cond.toLowerCase()}`;
-  return `<svg class="cont${big?' big':''}" viewBox="0 0 ${W} ${G+2}" role="img" aria-label="${label}" preserveAspectRatio="xMinYMax meet">${o.join('')}</svg>`;
+  return `<svg class="cont${big?' big':''}" viewBox="0 0 ${W} ${G+3}" role="img" aria-label="${label}" preserveAspectRatio="xMinYMax meet">${o.join('')}</svg>`;
 }
 
 function cardHTML(c){
